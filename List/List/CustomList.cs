@@ -68,7 +68,7 @@ namespace List
 
         public void CopyTo(T[] array, int arrayIndex)
         {
-            throw new NotImplementedException();
+            _innerArray.CopyTo(array, arrayIndex);
         }
 
         public IEnumerator<T> GetEnumerator()
