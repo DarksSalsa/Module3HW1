@@ -1,11 +1,13 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 
 namespace List
 {
-    public class CustomList<T> : IList<T>
+    public class CustomList<T> : ICollection<T>
     {
+        private readonly int _multiplierInCaseTheInnerArrayIsFullButNeedsToBecomeWider = 2;
         private int _positionCounter = 0;
-        private T[] _arr = new T[4];
+        private T[] _innerArray = new T[4];
         public bool IsReadOnly => throw new NotImplementedException();
         public int Count
         {
@@ -19,31 +21,7 @@ namespace List
         {
             get
             {
-                return _arr.Length;
-            }
-        }
-
-        public T this[int i]
-        {
-            get
-            {
-                if (i <= Count)
-                {
-                    return _arr[i];
-                }
-
-                throw new IndexOutOfRangeException();
-            }
-            set
-            {
-                if (i <= Count)
-                {
-                    _arr[i] = value;
-                }
-                else
-                {
-                    throw new IndexOutOfRangeException();
-                }
+                return _innerArray.Length;
             }
         }
 
@@ -51,57 +29,41 @@ namespace List
         {
             if (Count >= Capacity)
             {
-                T[] arr1 = new T[Capacity * 2];
-                _arr.CopyTo(arr1, 0);
-                _arr = arr1;
+                IncreaseArrayCapacity();
             }
 
-            _arr[Count] = item;
+            _innerArray[Count] = item;
             _positionCounter++;
         }
 
-        public void AddRange(IList<T> coll)
+        public void AddRange(ICollection<T> collection)
         {
-            if (coll.Count >= Capacity)
+            while (Count + collection.Count >= Capacity)
             {
-                T[] arr1 = new T[Capacity * 2];
-                _arr.CopyTo(arr1, 0);
-                _arr = arr1;
+                IncreaseArrayCapacity();
             }
 
-            for (var i = Count; i < coll.Count; i++)
+            for (var i = Count; i < Count + collection.Count; i++)
             {
-                _arr[i] = coll[i - Count];
+                _innerArray[i] = collection.ElementAt(i - Count);
             }
 
-            _positionCounter += coll.Count;
+            _positionCounter += collection.Count;
         }
 
-        public void AddRange(T[] coll)
+        public void AddRange(T[] array)
         {
-            if (coll.Length >= Capacity)
+            if (array.Length >= Capacity)
             {
-                T[] arr1 = new T[Capacity * 2];
-                _arr.CopyTo(arr1, 0);
-                _arr = arr1;
+                IncreaseArrayCapacity();
             }
 
-            for (var i = Count; i < coll.Length; i++)
+            for (var i = Count; i < array.Length; i++)
             {
-                _arr[i] = coll[i - Count];
+                _innerArray[i] = array[i - Count];
             }
 
-            _positionCounter += coll.Length;
-        }
-
-        public void Clear()
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool Contains(T item)
-        {
-            throw new NotImplementedException();
+            _positionCounter += array.Length;
         }
 
         public void CopyTo(T[] array, int arrayIndex)
@@ -111,53 +73,76 @@ namespace List
 
         public IEnumerator<T> GetEnumerator()
         {
-            throw new NotImplementedException();
-        }
-
-        public int IndexOf(T item)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Insert(int index, T item)
-        {
-            throw new NotImplementedException();
+            for (var i = 0; i < Count; i++)
+            {
+                yield return _innerArray[i];
+            }
         }
 
         public bool Remove(T item)
         {
-            /*if (!_arr.Contains(item))
+            if (!_innerArray.Contains(item))
             {
                 return false;
             }
 
             for (var i = 0; i < _positionCounter; i++)
             {
-                if (!_arr[i].Equals(default(T)) && !item.Equals(default(T)))
+                if (_innerArray[i] !.Equals(item))
                 {
+                    for (var j = i; j < Count - 1; j++)
+                    {
+                        _innerArray[j] = _innerArray[j + 1];
+                    }
+
+                    break;
                 }
-            }*/
-            throw new NotImplementedException();
+            }
+
+            _positionCounter--;
+            return true;
         }
 
         public void RemoveAt(int index)
         {
             for (var i = index; i < Count - 1; i++)
             {
-                _arr[i] = _arr[i + 1];
+                _innerArray[i] = _innerArray[i + 1];
             }
 
             _positionCounter--;
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
+        public void Sort(IComparer<T> comparer)
         {
-            throw new NotImplementedException();
+            Array.Sort(_innerArray, comparer);
         }
 
-        public void Sort(IComparer<T> com)
+        public void Clear()
         {
-            Array.Sort(_arr, com);
+            _innerArray = new T[4];
+        }
+
+        public bool Contains(T item)
+        {
+            if (!_innerArray.Contains(item))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return _innerArray.GetEnumerator();
+        }
+
+        private void IncreaseArrayCapacity()
+        {
+            T[] innerArray1 = new T[Capacity * _multiplierInCaseTheInnerArrayIsFullButNeedsToBecomeWider];
+            _innerArray.CopyTo(innerArray1, 0);
+            _innerArray = innerArray1;
         }
     }
 }
